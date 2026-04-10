@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>馳立汽車-訂閱公告</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, "Helvetica Neue", sans-serif; margin: 0; padding: 15px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; box-sizing: border-box; }
+    .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box; }
+    h2 { color: #333; text-align: center; margin: 0 0 5px 0; font-size: 22px; }
+    p.subtitle { text-align: center; color: #888; margin: 0 0 15px 0; font-size: 14px; }
+    hr { border: 0; border-top: 1px solid #eee; margin-bottom: 15px; }
+    .section-title { font-weight: bold; margin: 10px 0 8px; color: #222; font-size: 16px; }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .option-btn { flex: 1 1 45%; padding: 12px 5px; border: 2px solid #eee; border-radius: 12px; background: #fff; cursor: pointer; text-align: center; font-size: 16px; font-weight: bold; transition: all 0.2s; color: #444; box-sizing: border-box; }
+    .option-btn.active { background: #00b900; color: white; border-color: #00b900; }
+    input[type="email"] { width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; outline: none; margin-bottom: 5px; }
+    input[type="email"]:focus { border-color: #00b900; }
+    #error-msg { color: #ff4d4f; font-size: 13px; font-weight: bold; margin: 0 0 10px 0; display: none; }
+    #submit-btn { width: 100%; padding: 16px; background: #00b900; color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; transition: 0.3s; }
+    #submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .required-tag { color: #ff4d4f; margin-left: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>馳立汽車</h2>
+    <p class="subtitle">訂閱放假通知，掌握即時異動</p>
+    <hr>
+    <div class="section-title">1. 您的愛車類別<span class="required-tag">*</span></div>
+    <div class="btn-group" id="carTypeGroup">
+      <div class="option-btn" onclick="selectBtn('carType', 'Toyota & Lexus油電')">Toyota & Lexus油電</div>
+      <div class="option-btn" onclick="selectBtn('carType', '其他品牌油電')">其他油電</div>
+      <div class="option-btn" onclick="selectBtn('carType', '汽油車')">汽油車</div>
+      <div class="option-btn" onclick="selectBtn('carType', '純電車')">純電車</div>
+    </div>
+    <div class="section-title">2. 您是馳立的朋友嗎？<span class="required-tag">*</span></div>
+    <div class="btn-group" id="statusGroup">
+      <div class="option-btn" onclick="selectBtn('status', '老客戶(曾來過)')">老客戶</div>
+      <div class="option-btn" onclick="selectBtn('status', '新朋友(初次見面)')">新朋友</div>
+    </div>
+    <div class="section-title">3. 電子郵件<span class="required-tag">*</span></div>
+    <input type="email" id="email" placeholder="請填寫 Email (必填)">
+    <p id="error-msg">⚠️ 尚未填寫完成：請確認按鈕皆已選擇，並填妥 Email。</p>
+    <button id="submit-btn" onclick="submitForm()">確認提交並訂閱日曆</button>
+  </div>
+
+  <script>
+    let formData = { carType: '', customerStatus: '', uid: '', displayName: '', email: '' };
+    const myLiffId = "2009763276-AFEv4fVx"; 
+    const gasUrl = "https://script.google.com/macros/s/AKfycbwTx4fofIaa4VeIb56M_nYo1QvZ-2qrw4xZlOoil4QahTCuV4U3t99NHu_zX-D1AQP2/exec"; 
+    const baseIcsUrl = "https://calendar.google.com/calendar/ical/3d412fbc23063b002d1074f32ee94e746fbb814c667e5fbc9ff6215974d795a5%40group.calendar.google.com/public/basic.ics";
+
+    liff.init({ liffId: myLiffId }).then(() => {
+      if (!liff.isLoggedIn()) { 
+        liff.login(); 
+      } else {
+        liff.getProfile().then(profile => {
+          formData.uid = profile.userId;
+          formData.displayName = profile.displayName;
+        });
+      }
+    });
+
+    function selectBtn(type, value) {
+      const parent = event.target.parentElement;
+      parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      if(type === 'carType') formData.carType = value;
+      if(type === 'status') formData.customerStatus = value;
+      document.getElementById('error-msg').style.display = 'none';
+    }
+
+    async function submitForm() {
+      const emailInput = document.getElementById('email').value.trim();
+      const errorMsg = document.getElementById('error-msg');
+      const btn = document.getElementById('submit-btn');
+      
+      if(!formData.carType || !formData.customerStatus || !emailInput || !emailInput.includes('@')) {
+        errorMsg.style.display = 'block';
+        return; 
+      }
+      
+      errorMsg.style.display = 'none';
+      formData.email = emailInput;
+      btn.disabled = true; 
+      btn.innerText = '處理中...';
+
+      // 萬一載入時沒抓到，送出前再抓一次
+      if (!formData.uid && liff.isLoggedIn()) {
+        try {
+          const profile = await liff.getProfile();
+          formData.uid = profile.userId;
+          formData.displayName = profile.displayName;
+        } catch (e) {
+          console.error("無法獲取使用者資料");
+        }
+      }
+
+      fetch(gasUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(formData)
+      }).then(() => {
+        triggerCalendarSubscription();
+      }).catch(() => {
+        triggerCalendarSubscription(); 
+      });
+    }
+
+    function triggerCalendarSubscription() {
+      const os = liff.getOS(); 
+      let targetUrl = os === "ios" 
+        ? baseIcsUrl.replace("https://", "webcal://") 
+        : "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(baseIcsUrl);
+
+      try {
+        liff.openWindow({ url: targetUrl, external: true });
+      } catch(e) {
+        window.location.href = targetUrl;
+      }
+
+      document.getElementById('submit-btn').innerText = '正在開啟日曆...';
+      setTimeout(() => { liff.closeWindow(); }, 3000);
+    }
+  </script>
+</body>
+</html>
