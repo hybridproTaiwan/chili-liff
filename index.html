@@ -112,17 +112,27 @@
 
     function triggerCalendarSubscription() {
       const os = liff.getOS(); 
-      let targetUrl = os === "ios" 
-        ? baseIcsUrl.replace("https://", "webcal://") 
-        : "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(baseIcsUrl);
+      
+      // 判斷系統並給予對應的網址
+      let targetUrl = "";
+      if (os === "ios") {
+        // iOS 維持原本順暢的 webcal 協定
+        targetUrl = baseIcsUrl.replace("https://", "webcal://");
+      } else {
+        // Android / 網頁版改用你測試成功的 embed 網址
+        targetUrl = "https://calendar.google.com/calendar/embed?src=3d412fbc23063b002d1074f32ee94e746fbb814c667e5fbc9ff6215974d795a5%40group.calendar.google.com&ctz=Asia%2FTaipei";
+      }
 
       try {
+        // external: true 會強制 Android 跳出 LINE 的內部瀏覽器，使用 Chrome 等外部瀏覽器開啟，這樣右下角才會出現 [+]
         liff.openWindow({ url: targetUrl, external: true });
       } catch(e) {
         window.location.href = targetUrl;
       }
 
       document.getElementById('submit-btn').innerText = '正在開啟日曆...';
+      
+      // 延遲關閉視窗，確保跳轉動作有足夠時間執行
       setTimeout(() => { liff.closeWindow(); }, 3000);
     }
   </script>
