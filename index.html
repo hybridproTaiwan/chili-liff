@@ -6,21 +6,120 @@
   <title>馳立汽車-訂閱公告</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system, "Helvetica Neue", sans-serif; margin: 0; padding: 15px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; box-sizing: border-box; }
-    .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; box-sizing: border-box; }
-    h2 { color: #333; text-align: center; margin: 0 0 5px 0; font-size: 22px; }
-    p.subtitle { text-align: center; color: #888; margin: 0 0 15px 0; font-size: 14px; }
-    hr { border: 0; border-top: 1px solid #eee; margin-bottom: 15px; }
-    .section-title { font-weight: bold; margin: 10px 0 8px; color: #222; font-size: 16px; }
-    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-    .option-btn { flex: 1 1 45%; padding: 12px 5px; border: 2px solid #eee; border-radius: 12px; background: #fff; cursor: pointer; text-align: center; font-size: 16px; font-weight: bold; transition: all 0.2s; color: #444; box-sizing: border-box; }
-    .option-btn.active { background: #00b900; color: white; border-color: #00b900; }
-    input[type="email"] { width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; outline: none; margin-bottom: 5px; }
-    input[type="email"]:focus { border-color: #00b900; }
-    #error-msg { color: #ff4d4f; font-size: 13px; font-weight: bold; margin: 0 0 10px 0; display: none; }
-    #submit-btn { width: 100%; padding: 16px; background: #00b900; color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; margin-top: 10px; cursor: pointer; transition: 0.3s; }
-    #submit-btn:disabled { background: #ccc; cursor: not-allowed; }
-    .required-tag { color: #ff4d4f; margin-left: 4px; }
+    body {
+      font-family: -apple-system, "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 15px;
+      background: #f8f9fa;
+      display: flex;
+      align-items: flex-start;        /* ✅ 改：不再垂直置中，從頂部開始 */
+      justify-content: center;
+      min-height: 100vh;
+      overflow-y: auto;               /* ✅ 改：允許上下捲動 */
+      -webkit-overflow-scrolling: touch; /* ✅ 新增：iOS 順滑捲動 */
+      box-sizing: border-box;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+      box-sizing: border-box;
+      padding-bottom: 30px;           /* ✅ 新增：底部留白，避免按鈕貼邊 */
+    }
+    h2 {
+      color: #333;
+      text-align: center;
+      margin: 0 0 5px 0;
+      font-size: 22px;
+    }
+    p.subtitle {
+      text-align: center;
+      color: #888;
+      margin: 0 0 15px 0;
+      font-size: 14px;
+    }
+    hr {
+      border: 0;
+      border-top: 1px solid #eee;
+      margin-bottom: 15px;
+    }
+    .section-title {
+      font-weight: bold;
+      margin: 10px 0 8px;
+      color: #222;
+      font-size: 16px;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .option-btn {
+      flex: 1 1 45%;
+      padding: 12px 5px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.2s;
+      color: #444;
+      box-sizing: border-box;
+    }
+    .option-btn.active {
+      background: #00b900;
+      color: white;
+      border-color: #00b900;
+    }
+    input[type="email"] {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      box-sizing: border-box;
+      font-size: 16px;
+      outline: none;
+      margin-bottom: 5px;
+    }
+    input[type="email"]:focus {
+      border-color: #00b900;
+    }
+    #error-msg {
+      color: #ff4d4f;
+      font-size: 13px;
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      display: none;
+    }
+    #submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: #00b900;
+      color: white;
+      border: none;
+      border-radius: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+      position: sticky;               /* ✅ 新增：按鈕黏在可視區底部 */
+      bottom: 16px;                   /* ✅ 新增：距離底部 16px */
+    }
+    #submit-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .required-tag {
+      color: #ff4d4f;
+      margin-left: 4px;
+    }
   </style>
 </head>
 <body>
@@ -48,13 +147,13 @@
 
   <script>
     let formData = { carType: '', customerStatus: '', uid: '', displayName: '', email: '' };
-    const myLiffId = "2009763276-AFEv4fVx"; 
-    const gasUrl = "https://script.google.com/macros/s/AKfycbz0HQsyBGeXz-suCL5ICDfYFhhlZVLw3sbAcrRidaq5ZcsCHnsLfb3lkMX6QzH6AJEWJA/exec"; 
+    const myLiffId = "2009763276-AFEv4fVx";
+    const gasUrl = "https://script.google.com/macros/s/AKfycbz0HQsyBGeXz-suCL5ICDfYFhhlZVLw3sbAcrRidaq5ZcsCHnsLfb3lkMX6QzH6AJEWJA/exec";
     const baseIcsUrl = "https://calendar.google.com/calendar/ical/3d412fbc23063b002d1074f32ee94e746fbb814c667e5fbc9ff6215974d795a5%40group.calendar.google.com/public/basic.ics";
 
     liff.init({ liffId: myLiffId }).then(() => {
-      if (!liff.isLoggedIn()) { 
-        liff.login(); 
+      if (!liff.isLoggedIn()) {
+        liff.login();
       } else {
         liff.getProfile().then(profile => {
           formData.uid = profile.userId;
@@ -67,8 +166,8 @@
       const parent = event.target.parentElement;
       parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
       event.target.classList.add('active');
-      if(type === 'carType') formData.carType = value;
-      if(type === 'status') formData.customerStatus = value;
+      if (type === 'carType') formData.carType = value;
+      if (type === 'status') formData.customerStatus = value;
       document.getElementById('error-msg').style.display = 'none';
     }
 
@@ -76,15 +175,15 @@
       const emailInput = document.getElementById('email').value.trim();
       const errorMsg = document.getElementById('error-msg');
       const btn = document.getElementById('submit-btn');
-      
-      if(!formData.carType || !formData.customerStatus || !emailInput || !emailInput.includes('@')) {
+
+      if (!formData.carType || !formData.customerStatus || !emailInput || !emailInput.includes('@')) {
         errorMsg.style.display = 'block';
-        return; 
+        return;
       }
-      
+
       errorMsg.style.display = 'none';
       formData.email = emailInput;
-      btn.disabled = true; 
+      btn.disabled = true;
       btn.innerText = '處理中...';
 
       // 萬一載入時沒抓到，送出前再抓一次
@@ -106,32 +205,31 @@
       }).then(() => {
         triggerCalendarSubscription();
       }).catch(() => {
-        triggerCalendarSubscription(); 
+        triggerCalendarSubscription();
       });
     }
 
     function triggerCalendarSubscription() {
-      const os = liff.getOS(); 
-      
-      // 判斷系統並給予對應的網址
+      const os = liff.getOS();
+
       let targetUrl = "";
       if (os === "ios") {
-        // iOS 維持原本順暢的 webcal 協定
+        // iOS 使用 webcal 協定
         targetUrl = baseIcsUrl.replace("https://", "webcal://");
       } else {
-        // Android / 網頁版改用你測試成功的 embed 網址
+        // Android / 網頁版使用 embed 網址
         targetUrl = "https://calendar.google.com/calendar/embed?src=3d412fbc23063b002d1074f32ee94e746fbb814c667e5fbc9ff6215974d795a5%40group.calendar.google.com&ctz=Asia%2FTaipei";
       }
 
       try {
-        // external: true 會強制 Android 跳出 LINE 的內部瀏覽器，使用 Chrome 等外部瀏覽器開啟，這樣右下角才會出現 [+]
+        // external: true 強制跳出 LINE 內部瀏覽器，使用 Chrome 等外部瀏覽器
         liff.openWindow({ url: targetUrl, external: true });
-      } catch(e) {
+      } catch (e) {
         window.location.href = targetUrl;
       }
 
       document.getElementById('submit-btn').innerText = '正在開啟日曆...';
-      
+
       // 延遲關閉視窗，確保跳轉動作有足夠時間執行
       setTimeout(() => { liff.closeWindow(); }, 3000);
     }
