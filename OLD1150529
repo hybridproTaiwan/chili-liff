@@ -1,0 +1,122 @@
+// 【1】你的 Channel Access Token
+var CHANNEL_ACCESS_TOKEN = 'EyS9qtN+bI7bPJsNonL6Fo/x2MRqElmE1HHyj86nk51juRHOXNNVSzRJ7/8aibXLX+achMSEmcg4p5gEKK1NeetN6Lwh+i5/d+PDkBkYnP+pyhoo0CTQTQx0HPcsNUTuOVYeDrM0wa2fnW9QQix3MAdB04t89/1O/w1cDnyilFU=';
+
+// 【2】唯一的收發大門 (智慧分流系統)
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+
+    // 🌟 路線 A：來自 LINE 對話框的訊息
+    if (data.events && data.events.length > 0) {
+      var event = data.events[0];
+      
+      // 確保是文字訊息
+      if (event.type === 'message' && event.message.type === 'text') {
+        var userMessage = event.message.text;
+        var replyToken = event.replyToken;
+
+        // 【正式上線】關鍵字：我要預約
+        if (userMessage === "我要預約") {
+          
+          // 📦 第一則訊息：日曆圖片
+          var imageMsg = {
+            "type": "image",
+            "originalContentUrl": "https://hybridproTaiwan.github.io/chili-liff/2026.png", 
+            "previewImageUrl": "https://hybridproTaiwan.github.io/chili-liff/2026.png"
+          };
+
+          // 📦 第二則訊息：最終定案版 Flex Message (加入營業時間與排版優化)
+          var flexMsg = {
+            "type": "flex",
+            "altText": "預約及店休公告",
+            "contents": {
+              "type": "bubble",
+              "size": "giga",
+              "header": { "type": "box", "layout": "vertical", "backgroundColor": "#263B6A", "paddingAll": "18px", "contents": [ { "type": "text", "text": "🎉 預約及店休公告", "color": "#FFFFFF", "size": "xxl", "weight": "bold", "align": "center" } ] },
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "paddingAll": "0px",
+                "spacing": "none",
+                "contents": [
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#FFFFFF",
+                    "paddingTop": "8px",
+                    "paddingBottom": "20px",
+                    "paddingStart": "20px",
+                    "paddingEnd": "20px",
+                    "contents": [
+                      { "type": "box", "layout": "vertical", "margin": "none", "spacing": "xs", "contents": [ { "type": "text", "text": "【馳立汽車 營業時間】", "color": "#263B6A", "size": "xl", "weight": "bold", "align": "center", "style": "normal" }, { "type": "text", "text": "❇️ 週一至週五 10:00 - 19:30", "size": "xl", "weight": "bold", "color": "#333333", "align": "center", "gravity": "center" }, { "type": "text", "text": "❇️ 週六 10:00 - 17:00", "size": "xl", "weight": "bold", "color": "#333333", "align": "center" }, { "type": "text", "text": "（每週日為固定公休日）", "size": "xl", "color": "#888888", "align": "center" } ] },
+                      { "type": "separator", "margin": "md" },
+                      { "type": "text", "text": "💡溫馨提醒：除週日固定公休外，\n 每月會有不定期排休或國定假日調整，\n 來店前請務必先確認「公休公告」！", "wrap": true, "size": "lg", "color": "#333333", "margin": "xl", "style": "normal", "weight": "bold", "decoration": "none", "align": "center" },
+                      { "type": "text", "text": "👇 點擊下方按鈕，訂閱放假公告不撲空", "color": "#D9534F", "size": "lg", "align": "center", "margin": "none", "weight": "bold" }
+                    ]
+                  },
+                  {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#F2F4F8",
+                    "paddingAll": "12px",
+                    "spacing": "sm",
+                    "contents": [
+                      { "type": "box", "layout": "vertical", "backgroundColor": "#263B6A", "cornerRadius": "md", "paddingAll": "14px", "action": { "type": "uri", "label": "📅 訂閱馳立放假公告", "uri": "https://liff.line.me/2009763276-AFEv4fVx" }, "contents": [ { "type": "text", "text": "📅 訂閱馳立放假公告", "color": "#FFFFFF", "size": "xxl", "weight": "bold", "align": "center", "adjustMode": "shrink-to-fit" } ] },
+                      { "type": "box", "layout": "vertical", "backgroundColor": "#065F46", "cornerRadius": "md", "paddingAll": "14px", "action": { "type": "message", "label": "👑 老客戶預約", "text": "老客戶預約" }, "contents": [ { "type": "text", "text": "👑 老客戶預約", "color": "#FFFFFF", "size": "xxl", "weight": "bold", "align": "center", "adjustMode": "shrink-to-fit" } ] },
+                      { "type": "box", "layout": "horizontal", "spacing": "sm", "contents": [ { "type": "box", "layout": "vertical", "flex": 1, "backgroundColor": "#E8ECEF", "cornerRadius": "md", "paddingAll": "12px", "action": { "type": "message", "label": "🚀 新客戶預約", "text": "新客戶預約" }, "contents": [ { "type": "text", "text": "🚀 新客戶預約", "color": "#111111", "size": "xl", "weight": "bold", "align": "center", "adjustMode": "shrink-to-fit" } ] }, { "type": "box", "layout": "vertical", "flex": 1, "backgroundColor": "#E8ECEF", "cornerRadius": "md", "paddingAll": "12px", "action": { "type": "message", "label": "🎁 限定驚喜", "text": "本日限定驚喜回饋" }, "contents": [ { "type": "text", "text": "🎁 預約驚喜", "color": "#111111", "size": "xl", "weight": "bold", "align": "center", "adjustMode": "shrink-to-fit" } ] } ] },
+                      { "type": "box", "layout": "horizontal", "spacing": "sm", "contents": [ { "type": "box", "layout": "vertical", "flex": 1, "backgroundColor": "#E8ECEF", "cornerRadius": "md", "paddingAll": "12px", "action": { "type": "message", "label": "📢 放假公告", "text": "其他月份放假公告" }, "contents": [ { "type": "text", "text": "📢 放假公告", "color": "#111111", "size": "xl", "weight": "bold", "align": "center", "adjustMode": "shrink-to-fit" } ] }, { "type": "box", "layout": "vertical", "flex": 1, "backgroundColor": "#E8ECEF", "cornerRadius": "md", "paddingAll": "12px", "action": { "type": "message", "label": "🎯 預約注意事項", "text": "預約注意事項" }, "contents": [ { "type": "text", "text": "🎯 預約須知", "color": "#111111", "size": "xl", "weight": "bold", "align": "center", "adjustMode": "shrink-to-fit" } ] } ] }
+                    ]
+                  }
+                ]
+              }
+            }
+          };
+          
+          // 🚀 發射出去！
+          replyLineMessage(replyToken, [imageMsg, flexMsg]);
+        }
+      }
+      return ContentService.createTextOutput("OK"); 
+    }
+
+    // 🌟 路線 B：來自 LIFF 的訂閱表單資料 (寫入試算表)
+    else if (data.email) {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = ss.getSheets()[0]; 
+
+      sheet.appendRow([
+        data.uid,           
+        data.displayName,   
+        "",                 
+        data.email,         
+        new Date(),         
+        data.carType,       
+        data.customerStatus 
+      ]);
+
+      return ContentService.createTextOutput(JSON.stringify({"result":"success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput("Success");
+
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({"result":"error", "message": error.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 【3】負責發送訊息的引擎
+function replyLineMessage(replyToken, messagesArray) {
+  var url = 'https://api.line.me/v2/bot/message/reply';
+  var options = {
+    'method': 'post',
+    'headers': {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + CHANNEL_ACCESS_TOKEN
+    },
+    'payload': JSON.stringify({
+      'replyToken': replyToken,
+      'messages': messagesArray 
+    })
+  };
+  UrlFetchApp.fetch(url, options);
+}
