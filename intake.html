@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 馳立 愛車初診表 B-0.2（115.11.17）：接 LINE 登入、送出傳給 B1 接收端（B1-0.4）、重複預約提示 -->
+<!-- 馳立 愛車初診表 B-0.4（115.11.17）：首頁先讓客人選「第一次來／我來過」，背景再查 A；計程車車牌；里程到 80 萬；按鈕改深綠。B-0.3：感謝頁保留馳立介紹＋找小編。B-0.2：接 LINE 登入、送出傳給 B1、重複預約提示 -->
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
@@ -66,6 +66,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green)}
 .official h2{color:#3E5E4B}
 .official b{font-size:18px}
 .official .links a{background:#D7E2DA;color:#3E5E4B;text-decoration:none;padding:6px 12px;border-radius:999px}
+.talk{display:block;text-align:center;margin-top:14px;padding:14px;border-radius:14px;background:var(--green);color:#fff;text-decoration:none;font-size:20px;font-weight:700}
 .offbtn{display:block;text-align:center;margin-top:12px;padding:12px;border-radius:12px;border:1px solid #C9D6CC;color:#4E6B58;text-decoration:none;font-size:17px;background:#F5F8F5}
 .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .links a{font-size:15px}
@@ -99,18 +100,19 @@ const MODELS={
 };
 const DRIVE=['RAV4 HV','RAV4 PHEV','Alphard HV','Alphard PHEV','NX300h','NX350h','NX450h+','RX400h','RX450h','RX450hL','RX350h','RX500h','LM300h','LM350h','LM500h'];
 const YEARS=[];for(let y=2026;y>=2001;y--)YEARS.push(String(y));YEARS.push('不確定');
-const KM=['1 萬以下'];for(let i=1;i<=40;i++)KM.push(i+' 萬');KM.push('40 萬以上','不知道');
+const KM=['1 萬以下'];for(let i=1;i<=80;i++)KM.push(i+' 萬');KM.push('80 萬以上','不知道');
 const CHANGED=['沒換過','不記得'].concat(KM.filter(k=>k!=='不知道').map(k=>'約 '+k));
-const PLATE_RE=[/^[A-Z]{3}-\d{4}$/,/^[A-Z]{2}-\d{4}$/,/^[A-Z]\d-\d{4}$/,/^\d[A-Z]-\d{4}$/,/^\d{4}-[A-Z]{2}$/];
-function fmtPlate(v){let s=String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(/^[A-Z]{3}\d{4}$/.test(s)||/^[A-Z0-9]{2}\d{4}$/.test(s))return s.slice(0,s.length-4)+'-'+s.slice(-4);if(/^\d{4}[A-Z]{2}$/.test(s))return s.slice(0,4)+'-'+s.slice(4);return String(v||'').toUpperCase().trim()}
+const PLATE_RE=[/^[A-Z]{3}-\d{4}$/,/^[A-Z]{2}-\d{4}$/,/^[A-Z]\d-\d{4}$/,/^\d[A-Z]-\d{4}$/,/^\d{4}-[A-Z]{2}$/,/^[A-Z]{3}-\d{3}$/,/^[A-Z]{2}-\d{3}$/,/^\d{3}-[A-Z]{2}$/];
+function fmtPlate(v){let s=String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(/^[A-Z]{3}\d{4}$/.test(s)||/^[A-Z0-9]{2}\d{4}$/.test(s))return s.slice(0,s.length-4)+'-'+s.slice(-4);if(/^\d{4}[A-Z]{2}$/.test(s))return s.slice(0,4)+'-'+s.slice(4);if(/^[A-Z]{2,3}\d{3}$/.test(s))return s.slice(0,s.length-3)+'-'+s.slice(-3);if(/^\d{3}[A-Z]{2}$/.test(s))return s.slice(0,3)+'-'+s.slice(3);return String(v||'').toUpperCase().trim()}
 const ITEMS=['定期保養','亮故障燈','動力電池','剎車系統','冷氣','全車檢測','異音異狀','其他'];
 // ===== 連線設定 =====
 const CONFIG={
- VERSION:'B-0.2',
+ VERSION:'B-0.4',
  LIFF_ID:'2009763276-g9sATDxS',
  B1_URL:'https://script.google.com/macros/s/AKfycbzuk1Y7qnYOfgnCRbn0Y4LRbYQ7020Wq5PEVAsiBsr_52dsppiqh9CmDrzrg4ADSdKl/exec'};
 // B1 查完 A 後回傳：LINE 名稱、老客的客戶資料與名下車輛（含待確認預約）
-let ME={lineName:'',customer:null,cars:[]};
+let ME={lineName:'',customer:null,cars:[],isReturning:false};
+let LOOK='pending';  // 背景查 A：pending／done／failed
 let ID_TOKEN='';
 // 去重小標籤（r16）：每打開一次表單一張，送兩次 B1 只收一次
 const NONCE=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2);
@@ -136,7 +138,7 @@ const FLOWS={
  update:['pick','customer?','history?','booking','review'],
  book:['confirm','customer?','booking','review']};
 const TITLES={customer:'客戶資料',vehicle:'愛車資料',history:'保養歷程',booking:'預約',review:'確認送出',pick:'選擇要更新的資料',confirm:'確認資料'};
-function start(b){S.branch=b;S.d={};S.err={};S.i=0;
+function start(b){const self=b==='newold';if(self)b='new';S.branch=b;S.d={};S.err={};S.i=0;S.d.cameBefore=self;
  S.d.lineName=ME.lineName;  // LINE 登入自動取得，不問客人（r16）
  if(b!=='new'&&ME.customer)Object.assign(S.d,{name:ME.customer.name||'',phone:String(ME.customer.phone||''),county:ME.customer.county||''});
  if(b==='book')S.d.wantBook='要預約';
@@ -147,10 +149,18 @@ function buildSteps(){S.steps=FLOWS[S.branch].filter(s=>{if(s==='customer?')retu
 function official(){return `<div class="card official"><h2>馳立汽車｜全台唯一據點</h2>
  <div><b>台中市南屯區五權西路三段 120 之 9 號</b></div>
  <div>Toyota &amp; Lexus 油電專修，沒有其他分店</div>
- <div>電話 0986-131-963｜LINE @yes1209</div>
+ <div>電話 0986-131-963｜LINE <a href="https://line.me/R/ti/p/@yes1209" style="color:inherit">@yes1209</a></div>
+ <a class="talk" href="https://line.me/R/ti/p/@yes1209">💬 直接找小編按我</a>
  <div class="links"><a href="https://www.facebook.com/hybrid1209/">Facebook</a><a href="https://www.instagram.com/hybrid120_9/">Instagram</a><a href="https://www.youtube.com/@taiwanhybrid1209">YouTube</a></div>
  <a class="offbtn" href="https://hybridprotaiwan.github.io/chili-official/">了解馳立官方唯一據點聲明 →</a></div>`}
-function pHome(){if(S.who==='loading')return `<div class="card" style="text-align:center"><h2>請稍等一下</h2><p class="sub">正在讀取您的資料…</p></div>`;
+function pHome(){
+ if(S.who==='ready')return `<div class="card"><h2>您好，歡迎來到馳立 👋</h2><p class="sub">請先選一個</p>
+ <button class="big b1" data-branch="new">第一次來馳立<small>基本資料、愛車資料、保養歷程</small></button>
+ <button class="big b2" id="iamold">我來過馳立<small>預約、帶另一台車來、更新資料</small></button></div>${official()}`;
+ if(S.who==='waiting')return `<div class="card" style="text-align:center"><h2>正在找您的資料…</h2><p class="sub">大約幾秒鐘</p></div>${official()}`;
+ if(S.who==='notfound')return `<div class="card"><h2>歡迎回來 🌿</h2><p class="sub">這是您第一次用「愛車初診表」，系統還沒對上您之前的紀錄。請先填一次資料，小編會幫您接上以前的保養紀錄。</p>
+ <button class="big b1" data-branch="newold">開始填寫<small>基本資料、愛車資料、保養歷程</small></button></div>${official()}`;
+ if(S.who==='loading')return `<div class="card" style="text-align:center"><h2>請稍等一下 🌿</h2><p class="sub">正在連線 LINE…</p></div>${official()}`;
  if(S.who==='error')return `<div class="card" style="text-align:center"><h2>連線有點問題</h2><p class="sub">${esc(S.msg||'請稍後再試一次。')}</p><button class="big b1" id="retry" style="text-align:center">重新整理</button><p class="sub" style="margin-top:12px">一直不行的話，請直接在 LINE 告訴我們 🙏</p></div>${official()}`;
  if(S.who==='old'&&!(ME.cars||[]).length)return `<div class="card"><h2>歡迎回來 🌿</h2><p class="sub">請先填一下愛車的資料</p>
  <button class="big b1" data-branch="car">填寫愛車資料<small>客戶資料已經有了，只要填車子</small></button></div>${official()}`;
@@ -166,11 +176,11 @@ function pCustomer(){const pre=S.branch!=='new';return `<div class="card"><h2>�
  ${S.d.lineName?`<p class="sub" style="margin-top:10px">LINE：${esc(S.d.lineName)}（已自動帶入）</p>`:''}
  ${Q('手機',txt('phone','09xxxxxxxx','tel'),'phone')}
  ${Q('居住縣市',sel('county',COUNTIES),'county')}
- ${S.branch==='new'?Q('從哪裡知道馳立',chips('source',SOURCES,true)+((S.d.source||[]).includes('其他')?'<div style="margin-top:10px">'+txt('sourceOther','請寫下來')+'</div>':''),'source',false,'可以選很多個'):''}</div>`}
+ ${S.branch==='new'&&!S.d.cameBefore?Q('從哪裡知道馳立',chips('source',SOURCES,true)+((S.d.source||[]).includes('其他')?'<div style="margin-top:10px">'+txt('sourceOther','請寫下來')+'</div>':''),'source',false,'可以選很多個'):''}</div>`}
 
 function modelList(){const b=S.d.brand,p=S.d.power;if(!MODELS[b])return [];if(p==='不確定'||!p)return [].concat(MODELS[b]['油電'],MODELS[b]['插電'],MODELS[b]['汽油']);return MODELS[b][p]||[]}
 function pVehicle(){const b=S.d.brand,m=S.d.model;return `<div class="card"><h2>愛車資料</h2>
- ${Q('車牌',txt('plate','例：ABC-1234、AB-1234、1234-AB'),'plate',false,'英文和數字照車牌上的順序填，分隔線可以不打')}${S.err.plate?chips('plateOdd',['我的車牌是其他格式'],false,'one'):''}
+ ${Q('車牌',txt('plate','例：ABC-1234、AB-1234、TAA-123'),'plate',false,'英文和數字照車牌上的順序填，分隔線可以不打')}${S.err.plate?chips('plateOdd',['我的車牌是其他格式'],false,'one'):''}
  ${Q('品牌',chips('brand',['Toyota','Lexus','其他']),'brand')}
  ${b==='其他'?Q('品牌與車款',txt('brandOther','例：Honda CR-V'),'brandOther'):''}
  ${b&&b!=='其他'?Q('動力',chips('power',['油電','汽油','插電','不確定']),'power'):''}
@@ -238,12 +248,13 @@ function pReview(){const d=S.d;const R=(k,v)=>(v&&(!Array.isArray(v)||v.length))
 function pDone(){const book=S.d.wantBook==='要預約';return `<div class="card" style="text-align:center"><h2>已收到，謝謝您 🌿</h2>
  <p>${book?'小編會盡快在 LINE 上跟您確認入廠時間。':'您的愛車資料已經建立，需要時隨時在 LINE 找我們。'}</p>
  </div>
+ ${official()}
  ${window.liff&&liff.isInClient&&liff.isInClient()?'<button class="big b2" id="closeWin" style="text-align:center">關閉</button>':''}`}
 
 // ===== 驗證 =====
 function check(step){const d=S.d,e={};
  if(step==='customer'){if(!d.name)e.name='請填寫姓名';if(!/^09\d{8}$/.test(d.phone||''))e.phone='手機號碼要完整填寫：09 開頭，共 10 碼';if(!d.county)e.county='請選擇縣市'}
- if(step==='vehicle'){if(!d.plate)e.plate='請填寫車牌';else{d.plate=fmtPlate(d.plate);if(!PLATE_RE.some(r=>r.test(d.plate))&&d.plateOdd!=='我的車牌是其他格式')e.plate='車牌格式看起來不太對，請再確認一下（例：ABC-1234、AB-1234、A1-2345、1234-AB）'}if(!d.brand)e.brand='請選擇品牌';if(d.brand==='其他'&&!d.brandOther)e.brandOther='請寫下品牌與車款';if(d.brand&&d.brand!=='其他'){if(!d.power)e.power='請選擇動力';else if(!d.model)e.model='請選擇車款'}if(!d.year)e.year='請選擇年份';if(!d.km)e.km='請選擇目前里程';if(!d.hand)e.hand='請選一手或二手'}
+ if(step==='vehicle'){if(!d.plate)e.plate='請填寫車牌';else{d.plate=fmtPlate(d.plate);if(!PLATE_RE.some(r=>r.test(d.plate))&&d.plateOdd!=='我的車牌是其他格式')e.plate='車牌格式看起來不太對，請再確認一下（例：ABC-1234、AB-1234、A1-2345、1234-AB、計程車 TAA-123）'}if(!d.brand)e.brand='請選擇品牌';if(d.brand==='其他'&&!d.brandOther)e.brandOther='請寫下品牌與車款';if(d.brand&&d.brand!=='其他'){if(!d.power)e.power='請選擇動力';else if(!d.model)e.model='請選擇車款'}if(!d.year)e.year='請選擇年份';if(!d.km)e.km='請選擇目前里程';if(!d.hand)e.hand='請選一手或二手'}
  if(step==='pick'){if(!d.pickPlate)e.pickPlate='請選擇車牌';else if(!(d.upd||[]).length)e.upd='請至少選一項'}
  if(step==='confirm'){if(!d.changed)e.changed='請選一個';if(!d.pickPlate)e.pickPlate='請選擇車牌'}
  if(step==='booking'){if(S.branch!=='book'&&!d.wantBook)e.wantBook='請選一個';if(d.wantBook==='要預約'){if(!(d.items||[]).length)e.items='請至少選一項';if(!(d.days||[]).length&&!d.date)e.days='請選方便的星期，或填指定日期';if(d.date&&new Date(d.date).getDay()===0)e.date='週日公休，請選別天';if(pendingOf()&&!d.bookMode)e.bookMode='請選一個'}}
@@ -259,7 +270,11 @@ function render(){
  nav.style.display='block';const nb=$('#btnNext');nb.textContent=st==='review'?(S.sending?'送出中…':'送出'):'下一步';nb.disabled=S.sending;$('#btnBack').disabled=S.sending}
 
 document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
- if(t.dataset.branch){start(t.dataset.branch);return}
+ if(t.dataset.branch){
+  // 選「第一次來」但其實找得到資料：直接帶到老客首頁
+  if(t.dataset.branch==='new'&&S.who==='ready'&&LOOK==='done'&&ME.isReturning){S.who='old';render();scrollTo(0,0);return}
+  start(t.dataset.branch);return}
+ if(t.id==='iamold'){S.who=LOOK==='pending'?'waiting':(ME.isReturning?'old':'notfound');render();scrollTo(0,0);return}
  if(t.id==='retry'){location.reload();return}
  if(t.id==='closeWin'){liff.closeWindow();return}
  if(t.dataset.k){const k=t.dataset.k,v=t.dataset.v;if(t.dataset.m==='1'){const a=S.d[k]||[];S.d[k]=a.includes(v)?a.filter(x=>x!==v):a.concat(v)}else S.d[k]=v;
@@ -284,7 +299,7 @@ const BATTERY={'原廠換的':'原廠換','外廠換的':'外廠換'};
 function toBody(){const d=S.d,br=S.branch,other=d.brand==='其他',selfModel=d.model==='其他（自己填）';
  const withHistory=br==='new'||br==='car'||(br==='update'&&(d.upd||[]).includes('這台車的保養歷程'));
  const notes={};(d.items||[]).forEach(it=>{if(d['note_'+it])notes[it]=d['note_'+it]});
- return {action:'submit',idToken:ID_TOKEN,nonce:NONCE,branch:br,formVersion:CONFIG.VERSION,
+ return {action:'submit',idToken:ID_TOKEN,nonce:NONCE,branch:br,formVersion:CONFIG.VERSION,selfReturning:!!d.cameBefore,
   customer:{name:d.name,phone:d.phone,county:d.county,sources:br==='new'?(d.source||[]).map(x=>x==='其他'&&d.sourceOther?'其他：'+d.sourceOther:nos(x)):[]},
   vehicle:{plate:d.plate||(d.pickPlate||'').split('｜')[0],brand:d.brand,power:d.power,
    model:other?d.brandOther:(selfModel?d.modelOther:d.model),modelOther:other?d.brandOther:(selfModel?d.modelOther:''),
@@ -309,19 +324,25 @@ async function submit(){if(S.sending)return;
  catch(e){S.msg='網路好像不太穩，請再按一次「送出」。'}
  S.sending=false;render();const n=document.querySelector('.notice');if(n)n.scrollIntoView({behavior:'smooth',block:'center'})}
 
-// ===== 打開表單：LINE 登入 → 問 B1 是新客還是老客 =====
+// ===== 打開表單：LINE 登入 → 先讓客人自己選，背景再問 B1 是新客還是老客 =====
 async function init(){render();
  try{
   if(!window.liff)throw new Error('LINE 元件沒有載入');
   await liff.init({liffId:CONFIG.LIFF_ID,withLoginOnExternalBrowser:true});
   if(!liff.isLoggedIn()){liff.login({redirectUri:location.href});return}
   ID_TOKEN=liff.getIDToken();
-  const r=await callB1({action:'lookup',idToken:ID_TOKEN});
+ }catch(e){console.error(e);S.who='error';S.msg='LINE 連線沒有成功，請重新整理一次。（'+(e&&e.message||e)+'）';render();return}
+ S.who='ready';render();
+ lookup();}
+async function lookup(){
+ try{const r=await callB1({action:'lookup',idToken:ID_TOKEN});
   if(!r||!r.ok)throw new Error(r&&r.error||'lookup_failed');
-  ME={lineName:r.lineName||'',customer:r.customer||null,cars:r.cars||[]};
-  S.who=r.isReturning?'old':'new';
-  loadDraft();render();
- }catch(e){console.error(e);S.who='error';S.msg='我們暫時讀不到您的資料，請重新整理一次。';render()}}
+  ME={lineName:r.lineName||'',customer:r.customer||null,cars:r.cars||[],isReturning:!!r.isReturning};LOOK='done';
+  callB1({action:'opened',idToken:ID_TOKEN,isReturning:ME.isReturning}).catch(()=>{});
+ }catch(e){console.error(e);LOOK='failed';try{const p=liff.getDecodedIDToken();ME.lineName=p&&p.name||''}catch(e2){}}
+ // 客人已經按了「我來過」在等：查完就帶過去
+ if(S.who==='waiting'){S.who=ME.isReturning?'old':'notfound';render()}
+ loadDraft();if(S.branch)render()}
 init();
 </script>
 </body>
